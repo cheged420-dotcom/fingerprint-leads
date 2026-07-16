@@ -7,13 +7,14 @@ const STAGES = [
   { key: "Contacted", prob: 0.25, color: "#0ea5e9" },
   { key: "Consultation", prob: 0.4, color: "#6366f1" },
   { key: "Proposal/BOQ Sent", prob: 0.6, color: "#a855f7" },
+  { key: "Approvals", prob: 0.7, color: "#ec4899" },
   { key: "Negotiation", prob: 0.8, color: "#e8792b" },
   { key: "Won", prob: 1.0, color: "#16a34a" },
   { key: "Lost", prob: 0.0, color: "#94a3b8" },
 ];
 
-const OPEN_STAGES = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Sent", "Negotiation"];
-const NEXT_ORDER = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Sent", "Negotiation", "Won"];
+const OPEN_STAGES = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Sent", "Approvals", "Negotiation"];
+const NEXT_ORDER = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Sent", "Approvals", "Negotiation", "Won"];
 
 const PROJECT_TYPES = ["Residential", "Commercial", "Industrial", "Renovation"];
 const SOURCES = ["Instagram", "Referral", "Website", "Walk-in", "Diaspora Network", "Other"];
