@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { scoreLabel } from "../lib/leadScore";
 
 const STAGES = [
   { key: "New Inquiry", prob: 0.1, color: "#64748b" },
@@ -18,6 +19,15 @@ const NEXT_ORDER = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Se
 
 const PROJECT_TYPES = ["Residential", "Commercial", "Industrial", "Renovation"];
 const SOURCES = ["Instagram", "Referral", "Website", "Walk-in", "Diaspora Network", "Other"];
+const BUDGET_BANDS = ["under 5M", "5-10M", "10-20M", "20M+"];
+const TIMELINES = [
+  { value: "ready now", label: "Ready now" },
+  { value: "3-6 months", label: "3-6 months" },
+  { value: "6-12 months", label: "6-12 months" },
+  { value: "exploring", label: "Exploring" },
+];
+
+const isHot = (l) => (Number(l.lead_score) || 0) >= 7;
 
 const stageOf = (key) => STAGES.find((s) => s.key === key) || STAGES[0];
 const nextStage = (key) => {
@@ -48,6 +58,10 @@ const blankLead = () => ({
   estimated_value: "",
   location: "",
   source: "Instagram",
+  budget_band: "",
+  has_land: null,
+  has_drawings: null,
+  timeline: "",
   diaspora: false,
   diaspora_country: "",
   stage: "New Inquiry",
@@ -106,6 +120,10 @@ export default function LeadDashboard() {
       estimated_value: lead.estimated_value == null ? "" : String(lead.estimated_value),
       location: lead.location || "",
       source: lead.source || "Instagram",
+      budget_band: lead.budget_band || "",
+      has_land: typeof lead.has_land === "boolean" ? lead.has_land : null,
+      has_drawings: typeof lead.has_drawings === "boolean" ? lead.has_drawings : null,
+      timeline: lead.timeline || "",
       diaspora: !!lead.diaspora,
       diaspora_country: lead.diaspora_country || "",
       stage: lead.stage || "New Inquiry",
@@ -195,6 +213,11 @@ export default function LeadDashboard() {
       const ao = OPEN_STAGES.includes(a.stage) ? 0 : 1;
       const bo = OPEN_STAGES.includes(b.stage) ? 0 : 1;
       if (ao !== bo) return ao - bo;
+
+      const ah = isHot(a) ? 0 : 1;
+      const bh = isHot(b) ? 0 : 1;
+      if (ah !== bh) return ah - bh;
+
       const ad = daysBetween(a.next_follow_up_at);
       const bd = daysBetween(b.next_follow_up_at);
       if (ad === null) return 1;
@@ -266,6 +289,20 @@ export default function LeadDashboard() {
                 {SOURCES.map((s) => <option key={s}>{s}</option>)}
               </select>
             </Field>
+            <Field label="Budget range (KES)">
+              <select value={draft.budget_band} onChange={(e) => setDraft({ ...draft, budget_band: e.target.value })}>
+                <option value="">Select…</option>
+                {BUDGET_BANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </Field>
+            <Field label="Timeline">
+              <select value={draft.timeline} onChange={(e) => setDraft({ ...draft, timeline: e.target.value })}>
+                <option value="">Select…</option>
+                {TIMELINES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </Field>
+            <YesNo label="Owns land" value={draft.has_land} onChange={(v) => setDraft({ ...draft, has_land: v })} />
+            <YesNo label="Has drawings" value={draft.has_drawings} onChange={(v) => setDraft({ ...draft, has_drawings: v })} />
             <Field label="Stage">
               <select value={draft.stage} onChange={(e) => setDraft({ ...draft, stage: e.target.value })}>
                 {STAGES.map((s) => <option key={s.key} value={s.key}>{s.key}</option>)}
@@ -338,6 +375,11 @@ export default function LeadDashboard() {
 
                 <div className="fp-card-mid">
                   <span className="fp-badge" style={{ background: st.color }}>{st.key}</span>
+                  {l.lead_score != null && (
+                    <span className={`fp-score fp-score-${scoreLabel(l.lead_score).toLowerCase()}`}>
+                      {scoreLabel(l.lead_score)} · {l.lead_score}
+                    </span>
+                  )}
                   {l.next_follow_up_at && OPEN_STAGES.includes(l.stage) && (
                     <span className={`fp-follow ${overdue ? "over" : dueToday ? "today" : ""}`}>
                       {overdue ? `Overdue ${Math.abs(d)}d` : dueToday ? "Follow up today" : `Follow up in ${d}d`}
@@ -393,6 +435,18 @@ function Field({ label, children, full }) {
   );
 }
 
+function YesNo({ label, value, onChange }) {
+  return (
+    <div className="fp-field">
+      <span>{label}</span>
+      <div className="fp-yesno">
+        <button type="button" className={`fp-pill ${value === true ? "on" : ""}`} onClick={() => onChange(value === true ? null : true)}>Yes</button>
+        <button type="button" className={`fp-pill ${value === false ? "on" : ""}`} onClick={() => onChange(value === false ? null : false)}>No</button>
+      </div>
+    </div>
+  );
+}
+
 const CSS = `
 .fp-root{--navy:#0f2942;--orange:#e8792b;--ink:#1e293b;--muted:#64748b;--line:#e2e8f0;--bg:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:16px;max-width:820px;margin:0 auto;box-sizing:border-box}
 .fp-root *{box-sizing:border-box}
@@ -429,6 +483,9 @@ const CSS = `
 .fp-field input:focus,.fp-field select:focus,.fp-field textarea:focus{outline:none;border-color:var(--orange)}
 .fp-check{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink)}
 .fp-check input{width:16px;height:16px;accent-color:var(--orange)}
+.fp-yesno{display:flex;gap:8px}
+.fp-pill{flex:1;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:8px;padding:8px;font-size:13px;font-weight:600;cursor:pointer}
+.fp-pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .fp-form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .fp-controls{margin-bottom:14px}
 .fp-search{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:14px;margin-bottom:10px;font-family:inherit}
@@ -446,6 +503,10 @@ const CSS = `
 .fp-value{font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap}
 .fp-card-mid{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
 .fp-badge{color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px}
+.fp-score{font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px}
+.fp-score-hot{background:#fef2f2;color:#dc2626}
+.fp-score-warm{background:#fff7ed;color:#c2410c}
+.fp-score-cold{background:#f1f5f9;color:#64748b}
 .fp-follow{font-size:11px;font-weight:600;color:var(--muted);background:#f1f5f9;padding:4px 8px;border-radius:6px}
 .fp-follow.today{background:#fff7ed;color:var(--orange)}
 .fp-follow.over{background:#fef2f2;color:#dc2626}

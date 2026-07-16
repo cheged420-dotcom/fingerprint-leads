@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { computeLeadScore } from "../../../../lib/leadScore";
 
 const EDITABLE_FIELDS = [
   "name",
@@ -9,12 +10,18 @@ const EDITABLE_FIELDS = [
   "location",
   "estimated_value",
   "source",
+  "budget_band",
+  "has_land",
+  "has_drawings",
+  "timeline",
   "diaspora",
   "diaspora_country",
   "stage",
   "next_follow_up_at",
   "message",
 ];
+
+const SCORE_INPUT_FIELDS = ["budget_band", "has_land", "has_drawings", "timeline", "diaspora"];
 
 export async function PATCH(request, context) {
   const supabase = getSupabaseAdmin();
@@ -34,6 +41,18 @@ export async function PATCH(request, context) {
       updates.estimated_value === "" || updates.estimated_value == null
         ? null
         : Number(updates.estimated_value);
+  }
+
+  if (SCORE_INPUT_FIELDS.some((f) => f in updates)) {
+    const { data: current, error: fetchErr } = await supabase
+      .from("leads")
+      .select("budget_band, has_land, has_drawings, timeline, diaspora")
+      .eq("id", id)
+      .single();
+    if (fetchErr) {
+      return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+    }
+    updates.lead_score = computeLeadScore({ ...current, ...updates });
   }
 
   const { data, error } = await supabase

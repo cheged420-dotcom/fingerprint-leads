@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin";
+import { computeLeadScore } from "../../../lib/leadScore";
+import { notifyHotLead } from "../../../lib/notifyHotLead";
 
 const PROJECT_TYPES = ["Residential", "Commercial", "Industrial", "Renovation"];
 const BUDGET_BANDS = ["under 5M", "5-10M", "10-20M", "20M+"];
@@ -66,6 +68,8 @@ export async function POST(request) {
     campaign: body.campaign ? String(body.campaign).trim() : null,
   };
 
+  fields.lead_score = computeLeadScore(fields);
+
   const { data: existing, error: findErr } = await supabase
     .from("leads")
     .select("id")
@@ -89,5 +93,10 @@ export async function POST(request) {
   if (insertErr) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
   }
+
+  if (fields.lead_score >= 7) {
+    await notifyHotLead(fields);
+  }
+
   return NextResponse.json({ ok: true, updated: false });
 }
