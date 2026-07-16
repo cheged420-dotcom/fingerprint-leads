@@ -9,6 +9,9 @@ const EDITABLE_FIELDS = [
   "project_type",
   "location",
   "estimated_value",
+  "site_visit_fee",
+  "drawings_fee",
+  "construction_value",
   "source",
   "budget_band",
   "has_land",
@@ -21,6 +24,7 @@ const EDITABLE_FIELDS = [
   "message",
 ];
 
+const NUMERIC_FIELDS = ["estimated_value", "site_visit_fee", "drawings_fee", "construction_value"];
 const SCORE_INPUT_FIELDS = ["budget_band", "has_land", "has_drawings", "timeline", "diaspora"];
 
 export async function PATCH(request, context) {
@@ -36,11 +40,10 @@ export async function PATCH(request, context) {
   for (const field of EDITABLE_FIELDS) {
     if (field in body) updates[field] = body[field];
   }
-  if ("estimated_value" in updates) {
-    updates.estimated_value =
-      updates.estimated_value === "" || updates.estimated_value == null
-        ? null
-        : Number(updates.estimated_value);
+  for (const f of NUMERIC_FIELDS) {
+    if (f in updates) {
+      updates[f] = updates[f] === "" || updates[f] == null ? null : Number(updates[f]);
+    }
   }
 
   if (SCORE_INPUT_FIELDS.some((f) => f in updates)) {

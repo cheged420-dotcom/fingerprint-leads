@@ -42,6 +42,15 @@ export async function POST(request) {
     estimated_value: body.estimated_value === "" || body.estimated_value == null
       ? null
       : Number(body.estimated_value),
+    site_visit_fee: body.site_visit_fee === "" || body.site_visit_fee == null
+      ? null
+      : Number(body.site_visit_fee),
+    drawings_fee: body.drawings_fee === "" || body.drawings_fee == null
+      ? null
+      : Number(body.drawings_fee),
+    construction_value: body.construction_value === "" || body.construction_value == null
+      ? null
+      : Number(body.construction_value),
     source: body.source || null,
     budget_band: body.budget_band || null,
     has_land: typeof body.has_land === "boolean" ? body.has_land : null,

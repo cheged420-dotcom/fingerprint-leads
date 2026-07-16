@@ -4,18 +4,41 @@ import React, { useState, useEffect, useMemo } from "react";
 import { scoreLabel } from "../lib/leadScore";
 
 const STAGES = [
-  { key: "New Inquiry", prob: 0.1, color: "#64748b" },
-  { key: "Contacted", prob: 0.25, color: "#0ea5e9" },
-  { key: "Consultation", prob: 0.4, color: "#6366f1" },
-  { key: "Proposal/BOQ Sent", prob: 0.6, color: "#a855f7" },
-  { key: "Approvals", prob: 0.7, color: "#ec4899" },
-  { key: "Negotiation", prob: 0.8, color: "#e8792b" },
-  { key: "Won", prob: 1.0, color: "#16a34a" },
-  { key: "Lost", prob: 0.0, color: "#94a3b8" },
+  { key: "New Inquiry", prob: 0.05, color: "#64748b" },
+  { key: "Contacted", prob: 0.1, color: "#0ea5e9" },
+  { key: "Site Visit Booked", prob: 0.2, color: "#38bdf8" },
+  { key: "Site Visit Done (Paid)", prob: 0.3, color: "#6366f1" },
+  { key: "Drawings (Paid)", prob: 0.45, color: "#8b5cf6" },
+  { key: "Approvals (County & NCA)", prob: 0.6, color: "#a855f7" },
+  { key: "Construction Proposal/BOQ", prob: 0.7, color: "#ec4899" },
+  { key: "Construction Negotiation", prob: 0.85, color: "#e8792b" },
+  { key: "Won - Build", prob: 1.0, color: "#16a34a" },
+  { key: "Design Complete - No Build", prob: 0, color: "#0d9488" },
+  { key: "Lost", prob: 0, color: "#94a3b8" },
 ];
 
-const OPEN_STAGES = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Sent", "Approvals", "Negotiation"];
-const NEXT_ORDER = ["New Inquiry", "Contacted", "Consultation", "Proposal/BOQ Sent", "Approvals", "Negotiation", "Won"];
+const OPEN_STAGES = [
+  "New Inquiry",
+  "Contacted",
+  "Site Visit Booked",
+  "Site Visit Done (Paid)",
+  "Drawings (Paid)",
+  "Approvals (County & NCA)",
+  "Construction Proposal/BOQ",
+  "Construction Negotiation",
+];
+const NEXT_ORDER = [
+  "New Inquiry",
+  "Contacted",
+  "Site Visit Booked",
+  "Site Visit Done (Paid)",
+  "Drawings (Paid)",
+  "Approvals (County & NCA)",
+  "Construction Proposal/BOQ",
+  "Construction Negotiation",
+  "Won - Build",
+];
+const DRAWINGS_INDEX = NEXT_ORDER.indexOf("Drawings (Paid)");
 
 const PROJECT_TYPES = ["Residential", "Commercial", "Industrial", "Renovation"];
 const SOURCES = ["Instagram", "Referral", "Website", "Walk-in", "Diaspora Network", "Other"];
@@ -55,7 +78,9 @@ const blankLead = () => ({
   phone: "",
   email: "",
   project_type: "Residential",
-  estimated_value: "",
+  construction_value: "",
+  site_visit_fee: "",
+  drawings_fee: "",
   location: "",
   source: "Instagram",
   budget_band: "",
@@ -117,7 +142,9 @@ export default function LeadDashboard() {
       phone: lead.phone || "",
       email: lead.email || "",
       project_type: lead.project_type || "Residential",
-      estimated_value: lead.estimated_value == null ? "" : String(lead.estimated_value),
+      construction_value: lead.construction_value == null ? "" : String(lead.construction_value),
+      site_visit_fee: lead.site_visit_fee == null ? "" : String(lead.site_visit_fee),
+      drawings_fee: lead.drawings_fee == null ? "" : String(lead.drawings_fee),
       location: lead.location || "",
       source: lead.source || "Instagram",
       budget_band: lead.budget_band || "",
@@ -188,13 +215,23 @@ export default function LeadDashboard() {
   };
 
   const metrics = useMemo(() => {
-    const open = leads.filter((l) => OPEN_STAGES.includes(l.stage));
-    const pipeline = open.reduce((s, l) => s + (Number(l.estimated_value) || 0), 0);
-    const weighted = open.reduce(
-      (s, l) => s + (Number(l.estimated_value) || 0) * stageOf(l.stage).prob,
+    const designRevenue = leads.reduce(
+      (s, l) => s + (Number(l.site_visit_fee) || 0) + (Number(l.drawings_fee) || 0),
       0
     );
-    return { pipeline, weighted, openCount: open.length };
+
+    const open = leads.filter((l) => OPEN_STAGES.includes(l.stage));
+    const weightedConstruction = open.reduce(
+      (s, l) => s + (Number(l.construction_value) || 0) * stageOf(l.stage).prob,
+      0
+    );
+
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const signedThisMonth = leads
+      .filter((l) => l.stage === "Won - Build" && (l.updated_at || "").slice(0, 7) === thisMonth)
+      .reduce((s, l) => s + (Number(l.construction_value) || 0), 0);
+
+    return { designRevenue, weightedConstruction, signedThisMonth, openCount: open.length };
   }, [leads]);
 
   const visible = useMemo(() => {
@@ -253,8 +290,9 @@ export default function LeadDashboard() {
       {err && <div className="fp-alert">{err}</div>}
 
       <section className="fp-stats">
-        <Stat label="Open Pipeline" value={fmtKES(metrics.pipeline)} sub={`${metrics.openCount} active leads`} accent="#0f2942" />
-        <Stat label="Weighted Forecast" value={fmtKES(metrics.weighted)} sub="probability-adjusted" accent="#6366f1" />
+        <Stat label="Design Revenue Banked" value={fmtKES(metrics.designRevenue)} sub="site visit + drawings fees" accent="#0d9488" />
+        <Stat label="Weighted Construction Forecast" value={fmtKES(metrics.weightedConstruction)} sub={`${metrics.openCount} open leads`} accent="#6366f1" />
+        <Stat label="Construction Signed This Month" value={fmtKES(metrics.signedThisMonth)} sub="Won - Build" accent="#16a34a" />
       </section>
 
       {showForm && (
@@ -278,8 +316,14 @@ export default function LeadDashboard() {
                 {PROJECT_TYPES.map((t) => <option key={t}>{t}</option>)}
               </select>
             </Field>
-            <Field label="Estimated value (KES)">
-              <input type="number" value={draft.estimated_value} onChange={(e) => setDraft({ ...draft, estimated_value: e.target.value })} placeholder="24500000" />
+            <Field label="Construction value (KES)">
+              <input type="number" value={draft.construction_value} onChange={(e) => setDraft({ ...draft, construction_value: e.target.value })} placeholder="24500000" />
+            </Field>
+            <Field label="Site visit fee (KES)">
+              <input type="number" value={draft.site_visit_fee} onChange={(e) => setDraft({ ...draft, site_visit_fee: e.target.value })} placeholder="15000" />
+            </Field>
+            <Field label="Drawings fee (KES)">
+              <input type="number" value={draft.drawings_fee} onChange={(e) => setDraft({ ...draft, drawings_fee: e.target.value })} placeholder="150000" />
             </Field>
             <Field label="Location / plot">
               <input value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} placeholder="e.g. Ntima, Meru" />
@@ -369,8 +413,15 @@ export default function LeadDashboard() {
                       {l.name} {l.diaspora && <span className="fp-tag-dia">Diaspora</span>}
                     </div>
                     <div className="fp-meta">{l.project_type || "—"} · {l.location || "—"} · {l.source || "—"}</div>
+                    {(l.site_visit_fee || l.drawings_fee) && (
+                      <div className="fp-fees">
+                        {l.site_visit_fee ? `Site visit: ${fmtKES(l.site_visit_fee)}` : ""}
+                        {l.site_visit_fee && l.drawings_fee ? " · " : ""}
+                        {l.drawings_fee ? `Drawings: ${fmtKES(l.drawings_fee)}` : ""}
+                      </div>
+                    )}
                   </div>
-                  <div className="fp-value">{fmtKES(l.estimated_value)}</div>
+                  <div className="fp-value">{fmtKES(l.construction_value)}</div>
                 </div>
 
                 <div className="fp-card-mid">
@@ -393,6 +444,11 @@ export default function LeadDashboard() {
                   {nextStage(l.stage) && (
                     <button className="fp-btn fp-btn-accent" onClick={() => advance(l)}>
                       → {nextStage(l.stage)}
+                    </button>
+                  )}
+                  {OPEN_STAGES.includes(l.stage) && NEXT_ORDER.indexOf(l.stage) >= DRAWINGS_INDEX && (
+                    <button className="fp-btn fp-btn-design" onClick={() => setStage(l, "Design Complete - No Build")}>
+                      Design complete
                     </button>
                   )}
                   {OPEN_STAGES.includes(l.stage) && (
@@ -465,8 +521,9 @@ const CSS = `
 .fp-btn-ghost{background:#fff;color:var(--muted);border:1px solid var(--line)}
 .fp-btn-ghost:hover{background:#f1f5f9}
 .fp-btn-lost{background:#fff;color:#94a3b8;border:1px solid var(--line)}
+.fp-btn-design{background:#fff;color:#0d9488;border:1px solid var(--line)}
 .fp-alert{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px}
-.fp-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.fp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
 .fp-stat{background:#fff;border:1px solid var(--line);border-top:3px solid;border-radius:10px;padding:12px 14px}
 .fp-stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
 .fp-stat-value{font-size:22px;font-weight:700;margin:4px 0 2px;letter-spacing:-.02em}
@@ -500,6 +557,7 @@ const CSS = `
 .fp-name{font-size:15px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .fp-tag-dia{background:#eef2ff;color:#4338ca;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em}
 .fp-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.fp-fees{font-size:11px;color:#0d9488;font-weight:600;margin-top:3px}
 .fp-value{font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap}
 .fp-card-mid{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
 .fp-badge{color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px}
