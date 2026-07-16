@@ -269,7 +269,7 @@ export default function LeadDashboard() {
 
       <header className="fp-header">
         <div className="fp-brand">
-          <span className="fp-mark">▚</span>
+          <Logo />
           <div>
             <h1>Fingerprint Builders</h1>
             <p>Lead Tracker · Design, Build &amp; Renovate</p>
@@ -472,6 +472,20 @@ export default function LeadDashboard() {
   );
 }
 
+function Logo({ size = 40 }) {
+  return (
+    <svg width={size} height={Math.round(size * 0.83)} viewBox="0 0 120 100" className="fp-mark" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="60" width="10" height="32" rx="5" fill="#0f2942" />
+      <rect x="20" y="40" width="10" height="52" rx="5" fill="#0f2942" />
+      <rect x="36" y="62" width="10" height="30" rx="5" fill="#e8792b" />
+      <rect x="52" y="20" width="10" height="72" rx="5" fill="#0f2942" />
+      <rect x="68" y="40" width="10" height="52" rx="5" fill="#0f2942" />
+      <rect x="84" y="54" width="10" height="38" rx="5" fill="#0f2942" />
+      <rect x="100" y="66" width="10" height="26" rx="5" fill="#e8792b" />
+    </svg>
+  );
+}
+
 function Stat({ label, value, sub, accent }) {
   return (
     <div className="fp-stat" style={{ borderTopColor: accent }}>
@@ -508,7 +522,7 @@ const CSS = `
 .fp-root *{box-sizing:border-box}
 .fp-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
 .fp-brand{display:flex;align-items:center;gap:12px}
-.fp-mark{width:40px;height:40px;display:grid;place-items:center;background:var(--navy);color:var(--orange);border-radius:10px;font-size:20px;font-weight:700}
+.fp-mark{flex:none}
 .fp-brand h1{font-size:17px;margin:0;color:var(--navy);letter-spacing:-.01em}
 .fp-brand p{font-size:11px;margin:2px 0 0;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .fp-btn{border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s,transform .05s}

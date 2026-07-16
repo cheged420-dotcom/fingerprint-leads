@@ -71,7 +71,7 @@ export default function InquiryForm() {
       <div className="fq-root">
         <style>{CSS}</style>
         <div className="fq-card fq-done">
-          <div className="fq-mark">▚</div>
+          <Logo />
           <h1>{updated ? "Thanks — we've updated your details" : "Thanks — we've got your inquiry"}</h1>
           <p>A member of the Fingerprint Builders team will reach out to you shortly.</p>
         </div>
@@ -84,7 +84,7 @@ export default function InquiryForm() {
       <style>{CSS}</style>
       <form className="fq-card" onSubmit={submit}>
         <div className="fq-head">
-          <div className="fq-mark">▚</div>
+          <Logo />
           <div>
             <h1>Fingerprint Builders</h1>
             <p>Tell us about your project and we'll be in touch.</p>
@@ -176,6 +176,20 @@ function Field({ label, children }) {
   );
 }
 
+function Logo({ size = 40 }) {
+  return (
+    <svg width={size} height={Math.round(size * 0.83)} viewBox="0 0 120 100" className="fq-mark" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="60" width="10" height="32" rx="5" fill="#0f2942" />
+      <rect x="20" y="40" width="10" height="52" rx="5" fill="#0f2942" />
+      <rect x="36" y="62" width="10" height="30" rx="5" fill="#e8792b" />
+      <rect x="52" y="20" width="10" height="72" rx="5" fill="#0f2942" />
+      <rect x="68" y="40" width="10" height="52" rx="5" fill="#0f2942" />
+      <rect x="84" y="54" width="10" height="38" rx="5" fill="#0f2942" />
+      <rect x="100" y="66" width="10" height="26" rx="5" fill="#e8792b" />
+    </svg>
+  );
+}
+
 function YesNo({ label, value, onChange }) {
   return (
     <div className="fq-field">
@@ -193,7 +207,7 @@ const CSS = `
 .fq-root *{box-sizing:border-box}
 .fq-card{max-width:480px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
 .fq-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
-.fq-mark{width:40px;height:40px;flex:none;display:grid;place-items:center;background:var(--navy);color:var(--orange);border-radius:10px;font-size:20px;font-weight:700}
+.fq-mark{flex:none}
 .fq-head h1{font-size:17px;margin:0;color:var(--navy)}
 .fq-head p{font-size:12px;margin:2px 0 0;color:var(--muted)}
 .fq-alert{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:10px 12px;border-radius:8px;font-size:13px}
